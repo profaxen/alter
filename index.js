@@ -22,6 +22,18 @@ const { startCleanupScheduler } = require("./src/cleanup");
 // ─── Bot init ──────────────────────────────────────────────────────────────
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
+// ═══════════════════════════════════════════════════════════════════════
+//  DUMMY HTTP SERVER (For Render Health Checks)
+// ═══════════════════════════════════════════════════════════════════════
+const http = require("http");
+const PORT = process.env.PORT || 10000;
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Bot is running...\n");
+}).listen(PORT, () => {
+  logger.info(`Health check server listening on port ${PORT}`);
+});
+
 async function init() {
   await db.initDB();
   startCleanupScheduler();
