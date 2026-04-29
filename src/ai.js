@@ -160,13 +160,9 @@ ${chatHistoryText}`
     }
   ];
 
-  try {
-    const reply = await callGroq(messages, { temperature: 0.4 });
-    return reply.trim();
-  } catch (err) {
-    logger.error("Chat response failed", { error: err.message });
-    return "I'm here to help you build a premium resume. Could you tell me a bit more about your background?";
-  }
+  // We let the error bubble up to stateMachine.js for better user-facing error messages
+  const reply = await callGroq(messages, { temperature: 0.4 });
+  return reply.trim();
 }
 
 module.exports = { analyzeIntent, extractProfileData, generateChatResponse };
