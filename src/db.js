@@ -112,7 +112,11 @@ async function initDB() {
     `);
 
     // Ensure generated_files has the user_id column and indices
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_user_created ON generated_files(user_id, created_at);`);
+    try {
+      await pool.query(`CREATE INDEX idx_user_created ON generated_files(user_id, created_at);`);
+    } catch (e) {
+      // Index likely already exists
+    }
 
     logger.info("✅ Database initialized successfully.");
   } catch (error) {
