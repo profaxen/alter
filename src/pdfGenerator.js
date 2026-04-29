@@ -130,52 +130,52 @@ function renderProfessional(doc, data, W, H) {
   ].filter(Boolean);
   for (const c of contacts) { doc.text(c, 20, sy, { width: SW - 40 }); sy = doc.y + 5; }
 
-  // Skills
+  // Skills (Sidebar)
   if (data.sections.SKILLS?.length) {
-    sy += 15;
+    sy += 12;
     doc.fontSize(9).fillColor(AC).font("Helvetica-Bold").text("SKILLS", 20, sy, { width: SW - 40 });
-    sy = doc.y + 8;
+    sy = doc.y + 6;
     const skillsList = Array.isArray(data.sections.SKILLS) ? data.sections.SKILLS : [data.sections.SKILLS];
-    doc.fontSize(8).fillColor("#CFD8DC").font("Helvetica");
+    doc.fontSize(7.5).fillColor("#CFD8DC").font("Helvetica");
     for (const skill of skillsList) {
-      if (sy > H - 60) break;
-      doc.roundedRect(20, sy, SW - 40, 16, 3).fill("#263043");
-      doc.fillColor("#E0E0E0").text(skill, 28, sy + 3, { width: SW - 56 });
-      sy += 22;
+      if (sy > H - 160) break; // Leave space for Edu and Cert
+      doc.roundedRect(20, sy, SW - 40, 14, 2).fill("#263043");
+      doc.fillColor("#E0E0E0").text(skill, 26, sy + 3, { width: SW - 52 });
+      sy += 17;
     }
   }
 
-  // Languages
-  if (data.sections.LANGUAGES?.length && sy < H - 80) {
-    sy += 10;
+  // Languages (Sidebar)
+  if (data.sections.LANGUAGES?.length && sy < H - 140) {
+    sy += 8;
     doc.fontSize(9).fillColor(AC).font("Helvetica-Bold").text("LANGUAGES", 20, sy, { width: SW - 40 });
-    sy = doc.y + 8;
+    sy = doc.y + 5;
     doc.fontSize(8).fillColor("#CFD8DC").font("Helvetica");
     doc.text(data.sections.LANGUAGES.join(", "), 20, sy, { width: SW - 40 });
-    sy = doc.y + 10;
+    sy = doc.y + 8;
   }
 
-  // Education
+  // Education (Sidebar)
   if (data.sections.EDUCATION?.length && sy < H - 100) {
-    sy += 15;
+    sy += 12;
     doc.fontSize(9).fillColor(AC).font("Helvetica-Bold").text("EDUCATION", 20, sy, { width: SW - 40 });
-    sy = doc.y + 8;
-    doc.fontSize(8).fillColor("#CFD8DC").font("Helvetica");
+    sy = doc.y + 6;
+    doc.fontSize(7.5).fillColor("#CFD8DC").font("Helvetica");
     for (const line of data.sections.EDUCATION) {
-      if (sy > H - 40) break;
-      doc.text(line, 20, sy, { width: SW - 40 }); sy = doc.y + 5;
+      if (sy > H - 60) break;
+      doc.text(line, 20, sy, { width: SW - 40 }); sy = doc.y + 4;
     }
   }
 
-  // Certifications
-  if (data.sections.CERTIFICATIONS?.length) {
-    sy += 15;
+  // Certifications (Sidebar)
+  if (data.sections.CERTIFICATIONS?.length && sy < H - 40) {
+    sy += 12;
     doc.fontSize(9).fillColor(AC).font("Helvetica-Bold").text("CERTIFICATIONS", 20, sy, { width: SW - 40 });
-    sy = doc.y + 8;
-    doc.fontSize(8).fillColor("#CFD8DC").font("Helvetica");
+    sy = doc.y + 6;
+    doc.fontSize(7.5).fillColor("#CFD8DC").font("Helvetica");
     for (const line of data.sections.CERTIFICATIONS) {
-      if (sy > H - 30) break;
-      doc.text(`• ${line}`, 20, sy, { width: SW - 40 }); sy = doc.y + 4;
+      if (sy > H - 25) break;
+      doc.text(`• ${line}`, 20, sy, { width: SW - 40 }); sy = doc.y + 3;
     }
   }
 
@@ -252,15 +252,15 @@ function renderProfessional(doc, data, W, H) {
 //  TEMPLATE 2 — MODERN (gradient header)
 // ═══════════════════════════════════════════════════════════════════════
 function renderModern(doc, data, W, H) {
-  const HH = 120, AC = "#00BFA5", MX = 45, CW = W - MX * 2;
+  const HH = 100, AC = "#00BFA5", MX = 45, CW = W - MX * 2;
 
   // Header background
   doc.rect(0, 0, W, HH).fill("#15202B");
 
-  doc.fontSize(26).fillColor("#FFF").font("Helvetica-Bold").text(data.fullName, MX, 30, { width: CW });
+  doc.fontSize(24).fillColor("#FFF").font("Helvetica-Bold").text(data.fullName, MX, 25, { width: CW });
   if (data.title) {
-    doc.fontSize(11).fillColor(AC).font("Helvetica")
-       .text(data.title.toUpperCase(), MX, doc.y + 4, { width: CW, characterSpacing: 1.5 });
+    doc.fontSize(10).fillColor(AC).font("Helvetica")
+       .text(data.title.toUpperCase(), MX, doc.y + 2, { width: CW, characterSpacing: 1.2 });
   }
   const hContacts = [
     data.email !== "N/A" ? `Email: ${data.email}` : null,
@@ -268,102 +268,103 @@ function renderModern(doc, data, W, H) {
     data.location !== "N/A" ? `Loc: ${data.location}` : null,
   ].filter(Boolean);
   if (hContacts.length) {
-    doc.fontSize(8.5).fillColor("#B0BEC5").text(hContacts.join("   |   "), MX, doc.y + 6, { width: CW });
+    doc.fontSize(8).fillColor("#B0BEC5").text(hContacts.join("   |   "), MX, doc.y + 4, { width: CW });
   }
 
-  let y = HH + 25;
+  let y = HH + 15;
 
   const secHead = (title) => {
-    if (y > H - 100) { doc.addPage(); y = 40; }
-    doc.fontSize(11).fillColor("#0F2027").font("Helvetica-Bold").text(title, MX, y, { width: CW });
-    y = doc.y + 3;
-    doc.moveTo(MX, y).lineTo(MX + 45, y).strokeColor(AC).lineWidth(2.5).stroke();
-    doc.moveTo(MX + 47, y).lineTo(W - MX, y).strokeColor("#E0E0E0").lineWidth(0.5).stroke();
-    y += 10;
+    if (y > H - 80) { doc.addPage(); y = 40; }
+    doc.fontSize(10.5).fillColor("#0F2027").font("Helvetica-Bold").text(title, MX, y, { width: CW });
+    y = doc.y + 2;
+    doc.moveTo(MX, y).lineTo(MX + 40, y).strokeColor(AC).lineWidth(2).stroke();
+    doc.moveTo(MX + 42, y).lineTo(W - MX, y).strokeColor("#F0F0F0").lineWidth(0.5).stroke();
+    y += 8;
   };
 
   if (data.sections.SUMMARY?.length) {
     secHead("SUMMARY");
-    doc.fontSize(9.5).fillColor("#444").font("Helvetica")
-       .text(data.sections.SUMMARY.join(" "), MX, y, { width: CW, lineGap: 3 });
-    y = doc.y + 18;
+    doc.fontSize(9).fillColor("#444").font("Helvetica")
+       .text(data.sections.SUMMARY.join(" "), MX, y, { width: CW, lineGap: 2 });
+    y = doc.y + 12;
   }
 
   if (data.sections.SKILLS?.length) {
     secHead("SKILLS");
     const skillsList = Array.isArray(data.sections.SKILLS) ? data.sections.SKILLS : [data.sections.SKILLS];
     let sx = MX;
+    doc.fontSize(7.5).font("Helvetica");
     for (const skill of skillsList) {
-      const tw = doc.widthOfString(skill, { fontSize: 8 }) + 18;
-      if (sx + tw > W - MX) { sx = MX; y += 22; }
-      if (y > H - 50) { doc.addPage(); y = 40; sx = MX; }
-      doc.roundedRect(sx, y, tw, 17, 8).fill("#E8F5E9");
-      doc.fontSize(8).fillColor("#2E7D32").font("Helvetica").text(skill, sx + 9, y + 4);
-      sx += tw + 6;
+      const tw = doc.widthOfString(skill) + 14;
+      if (sx + tw > W - MX) { sx = MX; y += 18; }
+      if (y > H - 40) { doc.addPage(); y = 40; sx = MX; }
+      doc.roundedRect(sx, y, tw, 14, 2).fill("#F1F8E9");
+      doc.fillColor("#2E7D32").text(skill, sx + 7, y + 3.5);
+      sx += tw + 5;
     }
-    y += 30;
+    y += 22;
   }
 
   if (data.sections.EXPERIENCE?.length) {
     secHead("EXPERIENCE");
     for (const line of data.sections.EXPERIENCE) {
-      if (y > H - 100) { doc.addPage(); y = 40; }
+      if (y > H - 80) { doc.addPage(); y = 40; }
       if (line.includes(" | ")) {
         const parts = line.split("|").map((p) => p.trim());
-        doc.fontSize(10).fillColor("#1a1a2e").font("Helvetica-Bold")
+        doc.fontSize(9.5).fillColor("#1a1a2e").font("Helvetica-Bold")
            .text(parts[1] || parts[0], MX, y, { width: CW });
         y = doc.y + 1;
-        doc.fontSize(8.5).fillColor(AC).font("Helvetica")
+        doc.fontSize(8).fillColor(AC).font("Helvetica")
            .text([parts[0], parts[2]].filter(Boolean).join("  •  "), MX, y, { width: CW });
-        y = doc.y + 5;
-      } else if (line.startsWith("-") || line.startsWith("•")) {
-        doc.fontSize(9).fillColor("#555").font("Helvetica")
-           .text(`•  ${line.replace(/^[-•]\s*/, "")}`, MX + 10, y, { width: CW - 10, lineGap: 2 });
         y = doc.y + 4;
+      } else if (line.startsWith("-") || line.startsWith("•")) {
+        doc.fontSize(8.5).fillColor("#555").font("Helvetica")
+           .text(`•  ${line.replace(/^[-•]\s*/, "")}`, MX + 8, y, { width: CW - 8, lineGap: 1.5 });
+        y = doc.y + 3;
       }
     }
-    y += 12;
+    y += 10;
   }
 
   if (data.sections.PROJECTS?.length) {
     secHead("PROJECTS");
     for (const line of data.sections.PROJECTS) {
-      if (y > H - 100) { doc.addPage(); y = 40; }
+      if (y > H - 80) { doc.addPage(); y = 40; }
       if (line.includes(" | ")) {
         const parts = line.split("|").map((p) => p.trim());
-        doc.fontSize(10).fillColor("#1a1a2e").font("Helvetica-Bold")
+        doc.fontSize(9.5).fillColor("#1a1a2e").font("Helvetica-Bold")
            .text(parts[0], MX, y, { width: CW });
         y = doc.y + 1;
         if (parts[1]) {
-          doc.fontSize(8.5).fillColor(AC).font("Helvetica")
+          doc.fontSize(8).fillColor(AC).font("Helvetica")
              .text(parts[1], MX, y, { width: CW });
-          y = doc.y + 5;
+          y = doc.y + 4;
         }
       } else if (line.startsWith("-") || line.startsWith("•")) {
-        doc.fontSize(9).fillColor("#555").font("Helvetica")
-           .text(`•  ${line.replace(/^[-•]\s*/, "")}`, MX + 10, y, { width: CW - 10, lineGap: 2 });
-        y = doc.y + 4;
+        doc.fontSize(8.5).fillColor("#555").font("Helvetica")
+           .text(`•  ${line.replace(/^[-•]\s*/, "")}`, MX + 8, y, { width: CW - 8, lineGap: 1.5 });
+        y = doc.y + 3;
       }
-    }
-    y += 12;
-  }
-
-  if (data.sections.EDUCATION?.length) {
-    if (y > H - 80) { doc.addPage(); y = 40; }
-    secHead("EDUCATION");
-    for (const line of data.sections.EDUCATION) {
-      doc.fontSize(9.5).fillColor("#333").font("Helvetica").text(line, MX, y, { width: CW });
-      y = doc.y + 5;
     }
     y += 10;
   }
 
+  if (data.sections.EDUCATION?.length) {
+    secHead("EDUCATION");
+    for (const line of data.sections.EDUCATION) {
+      if (y > H - 40) { doc.addPage(); y = 40; }
+      doc.fontSize(9).fillColor("#333").font("Helvetica").text(line, MX, y, { width: CW });
+      y = doc.y + 4;
+    }
+    y += 8;
+  }
+
   if (data.sections.CERTIFICATIONS?.length) {
-    if (y > H - 60) { doc.addPage(); y = 40; }
     secHead("CERTIFICATIONS");
     for (const c of data.sections.CERTIFICATIONS) {
-      doc.fontSize(9).fillColor("#555").font("Helvetica").text(`•  ${c}`, MX, y, { width: CW });
-      y = doc.y + 4;
+      if (y > H - 30) { doc.addPage(); y = 40; }
+      doc.fontSize(8.5).fillColor("#555").font("Helvetica").text(`•  ${c}`, MX, y, { width: CW });
+      y = doc.y + 3;
     }
   }
 }
