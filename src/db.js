@@ -6,13 +6,20 @@ let db;
 
 async function initDB() {
   try {
-    // For local development, we check if Firebase is already initialized
     if (!admin.apps.length) {
-      // NOTE: For Render/Production, you should use Service Account JSON
-      // But for now, we'll use the project ID to initialize
-      admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || "laborconnect-95921"
-      });
+      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        // Production: Use Service Account JSON from env
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: serviceAccount.project_id
+        });
+      } else {
+        // Development: Fallback to Project ID (Requires local gcloud auth)
+        admin.initializeApp({
+          projectId: process.env.FIREBASE_PROJECT_ID || "laborconnect-95921"
+        });
+      }
     }
     db = admin.firestore();
     logger.info("✅ Firestore initialized successfully.");
