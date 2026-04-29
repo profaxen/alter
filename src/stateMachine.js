@@ -167,7 +167,16 @@ async function handleMessage(chatId, username, firstName, text, bot) {
 
   } catch (error) {
     logger.error("Error in state machine", { error: error.message, stack: error.stack });
-    await bot.sendMessage(chatId, "❌ Sorry, I encountered an error. Could you try sending that again?");
+    
+    let userFriendlyError = "❌ Sorry, I encountered an error. Could you try sending that again?";
+    
+    if (error.message.includes("index")) {
+      userFriendlyError = "⚙️ *Database Setup Required*\n\nI need a specific index to read our chat history. Please check the server logs for the Firestore index creation link, or ask your developer to add a composite index for the 'messages' collection.";
+    } else if (error.message.includes("401") || error.message.includes("api_key")) {
+      userFriendlyError = "🔑 *AI Configuration Error*\n\nMy AI brain (Groq API) isn't responding correctly. Please verify the `GROQ_API_KEY` in the environment variables.";
+    }
+
+    await bot.sendMessage(chatId, userFriendlyError, { parse_mode: "Markdown" });
   } finally {
     // Release concurrency lock
     await db.updateSessionState(chatId, session.current_state, { processing: false });
