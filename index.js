@@ -19,28 +19,96 @@ const { checkRateLimit } = require("./src/rateLimiter");
 const { generatePDF } = require("./src/pdfGenerator");
 const { startCleanupScheduler } = require("./src/cleanup");
 
+// ─── Global Error Handling ──────────────────────────────────────────────────
+process.on("uncaughtException", (err) => {
+  logger.error("💥 Uncaught Exception:", { message: err.message, stack: err.stack });
+  // In production, we might want to exit and let PM2/Docker restart, 
+  // but on Render/Heroku, we might want to try staying alive if it's not fatal.
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("🌐 Unhandled Rejection at:", { promise, reason: reason?.message || reason });
+});
+
 // ─── Bot init ──────────────────────────────────────────────────────────────
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(process.env.BOT_TOKEN, { 
+  polling: {
+    interval: 300,
+    autoStart: true,
+    params: { timeout: 10 }
+  } 
+});
+
+// Handle polling errors to prevent crash
+bot.on("polling_error", (error) => {
+  if (error.message.includes("EFATAL")) {
+    logger.error("❌ Fatal Polling Error, restarting...", { error: error.message });
+  } else {
+    logger.warn("⚠️ Polling Error (non-fatal):", { error: error.message });
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════════════
 //  DUMMY HTTP SERVER (For Render Health Checks)
 // ═══════════════════════════════════════════════════════════════════════
 const http = require("http");
 const PORT = process.env.PORT || 10000;
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
+  if (req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }));
+    return;
+  }
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Bot is running...\n");
-}).listen(PORT, () => {
+});
+
+server.listen(PORT, () => {
   logger.info(`Health check server listening on port ${PORT}`);
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SELF-PING MECHANISM (Keep Render Awake)
+// ═══════════════════════════════════════════════════════════════════════
+const axios = require("axios");
+function startSelfPing() {
+  const url = process.env.RENDER_EXTERNAL_URL;
+  if (!url) {
+    logger.warn("⚠️ RENDER_EXTERNAL_URL not set. Self-ping disabled. Bot might sleep on Free Tier.");
+    return;
+  }
+
+  // Ping every 10 minutes (Render sleeps after 15m)
+  setInterval(async () => {
+    try {
+      await axios.get(url);
+      logger.info("📡 Self-ping successful - keeping service awake.");
+    } catch (err) {
+      logger.error("❌ Self-ping failed:", { error: err.message });
+    }
+  }, 10 * 60 * 1000); 
+}
 
 async function init() {
   await db.initDB();
   startCleanupScheduler();
+  startSelfPing();
   logger.info("✅ Bot is running...");
 }
 
 init();
+
+// ─── Graceful Shutdown ─────────────────────────────────────────────────────
+const shutdown = async (signal) => {
+  logger.info(`\n${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    logger.info("HTTP server closed.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 // ═══════════════════════════════════════════════════════════════════════
 //  MESSAGE HANDLER (State Machine Router)
