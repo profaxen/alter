@@ -168,12 +168,20 @@ async function handleMessage(chatId, username, firstName, text, bot) {
   } catch (error) {
     logger.error("Error in state machine", { error: error.message, stack: error.stack });
     
-    let userFriendlyError = "❌ Sorry, I encountered an error. Could you try sending that again?";
+    // Professional generic error for users
+    let userFriendlyError = "❌ *Service Temporarily Unavailable*\n\nI'm having a bit of trouble processing that. Please try again in a moment. If the issue persists, feel free to use /reset to start fresh.";
     
-    if (error.message.includes("index")) {
-      userFriendlyError = "⚙️ *Database Setup Required*\n\nI need a specific index to read our chat history. Please check the server logs for the Firestore index creation link, or ask your developer to add a composite index for the 'messages' collection.";
-    } else if (error.message.includes("401") || error.message.includes("api_key")) {
-      userFriendlyError = "🔑 *AI Configuration Error*\n\nMy AI brain (Groq API) isn't responding correctly. Please verify the `GROQ_API_KEY` in the environment variables.";
+    // Show technical details ONLY to the admin
+    const isAdmin = String(chatId) === String(process.env.ADMIN_ID);
+    
+    if (isAdmin) {
+      if (error.message.includes("index")) {
+        userFriendlyError = "⚙️ *Admin Debug: Firestore Index Missing*\n\nPlease check Firebase console to create the required composite index.";
+      } else if (error.message.includes("401") || error.message.includes("api_key")) {
+        userFriendlyError = "🔑 *Admin Debug: AI API Key Error*\n\nCheck your `GROQ_API_KEY` in environment variables.";
+      } else {
+        userFriendlyError = `🛠 *Admin Debug: Error*\n\n\`${error.message}\``;
+      }
     }
 
     await bot.sendMessage(chatId, userFriendlyError, { parse_mode: "Markdown" });
