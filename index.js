@@ -1,9 +1,23 @@
 require("dotenv").config();
+const logger = require("./src/logger");
+
+// ─── Global Error Handling (Catch everything early) ────────────────────────
+process.on("uncaughtException", (err) => {
+  logger.error("💥 Uncaught Exception:", { message: err.message, stack: err.stack });
+  // In production, we exit to let the orchestrator (Render/PM2) restart the process
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("🌐 Unhandled Rejection at:", { promise, reason: reason?.message || reason });
+});
 
 // ── Validate required env vars immediately ─────────────────────────────────
-["BOT_TOKEN", "GROQ_API_KEY"].forEach((key) => {
+const REQUIRED_ENV_VARS = ["BOT_TOKEN", "GROQ_API_KEY"];
+REQUIRED_ENV_VARS.forEach((key) => {
   if (!process.env[key]) {
-    console.error(`❌ Missing required env var: ${key}. Exiting.`);
+    console.error(`\nFATAL: Missing required environment variable: ${key}`);
+    console.error(`Please add ${key} to your Render Environment Variables.\n`);
     process.exit(1);
   }
 });
@@ -12,23 +26,12 @@ const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
 
-const logger = require("./src/logger");
 const db = require("./src/db");
 const { handleMessage } = require("./src/stateMachine");
 const { checkRateLimit } = require("./src/rateLimiter");
 const { generatePDF } = require("./src/pdfGenerator");
 const { startCleanupScheduler } = require("./src/cleanup");
-
-// ─── Global Error Handling ──────────────────────────────────────────────────
-process.on("uncaughtException", (err) => {
-  logger.error("💥 Uncaught Exception:", { message: err.message, stack: err.stack });
-  // In production, we might want to exit and let PM2/Docker restart, 
-  // but on Render/Heroku, we might want to try staying alive if it's not fatal.
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  logger.error("🌐 Unhandled Rejection at:", { promise, reason: reason?.message || reason });
-});
+const axios = require("axios");
 
 // ─── Bot init ──────────────────────────────────────────────────────────────
 const bot = new TelegramBot(process.env.BOT_TOKEN, { 
@@ -63,14 +66,13 @@ const server = http.createServer((req, res) => {
   res.end("Bot is running...\n");
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   logger.info(`Health check server listening on port ${PORT}`);
 });
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SELF-PING MECHANISM (Keep Render Awake)
 // ═══════════════════════════════════════════════════════════════════════
-const axios = require("axios");
 function startSelfPing() {
   const url = process.env.RENDER_EXTERNAL_URL;
   if (!url) {
@@ -90,10 +92,15 @@ function startSelfPing() {
 }
 
 async function init() {
-  await db.initDB();
-  startCleanupScheduler();
-  startSelfPing();
-  logger.info("✅ Bot is running...");
+  try {
+    await db.initDB();
+    startCleanupScheduler();
+    startSelfPing();
+    logger.info("✅ Bot is running...");
+  } catch (err) {
+    logger.error("❌ Startup Error:", { message: err.message, stack: err.stack });
+    process.exit(1);
+  }
 }
 
 init();
@@ -135,7 +142,6 @@ bot.on("text", async (msg) => {
 const { extractPDF, extractImage } = require("./src/extractor");
 const { validateFile } = require("./src/validator");
 const { MAX_FILE_BYTES } = require("./src/config");
-const axios = require("axios");
 
 async function safeDownload(fileUrl) {
   const r = await axios.get(fileUrl, { responseType: "arraybuffer", timeout: 30000 });
@@ -301,16 +307,7 @@ bot.on("callback_query", async (query) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-//  GLOBAL ERROR HANDLERS
+//  POLLING ERROR HANDLER
 // ═══════════════════════════════════════════════════════════════════════
 
 bot.on("polling_error", (err) => logger.error("Polling error", { error: err.message }));
-
-process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled rejection", { reason: String(reason) });
-});
-
-process.on("uncaughtException", (err) => {
-  logger.error("Uncaught exception — shutting down", { error: err.message, stack: err.stack });
-  process.exit(1); 
-});

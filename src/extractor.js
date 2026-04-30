@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+require("pdf-parse/worker"); // Required for v2+ to avoid DOMMatrix/Worker errors during startup
 const { PDFParse } = require("pdf-parse");
 const Tesseract = require("tesseract.js");
 const logger = require("./logger");
